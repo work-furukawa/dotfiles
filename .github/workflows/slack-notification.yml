@@ -1,0 +1,48 @@
+name: "GitHub Actions Notifications"
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  notify-slack:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.client_payload.git.ref == 'master' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Debug PR Info
+        run: |
+          echo "PR Info: "
+          echo "URL: ${{ github.event.pull_request.html_url }}"
+          echo "タイトル: ${{ github.event.pull_request.title }}"
+          echo "本文: ${{ github.event.pull_request.body }}"
+          echo "PR番号: ${{ github.event.pull_request.number }}"
+          echo "openかclosedか: ${{ github.event.pull_request.state }}"
+          echo "作成日時: ${{ github.event.pull_request.created_at }}"
+          echo "プルリクを開いているブランチ: ${{ github.event.pull_request.head.ref }}"
+          echo "プルリクのマージ先: ${{ github.event.pull_request.base.ref }}"
+          echo "ドラフトかどうか: ${{ github.event.pull_request.draft }}"
+          echo "マージされたかどうか: ${{ github.event.pull_request.merged }}"
+
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_INCOMING_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{github.event.pull_request.title}}のリリースが完了しました！\n\n"
+                  }
+                }
+              ]
+            }
